@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+
+    <!--[if lt IE 9]>
+        <style>body {display: none; background: none !important} </style>
+        <meta http-equiv="Refresh" Content="0; url=//outdatedbrowser.com/" />
+    <![endif]-->
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="format-detection" content="telephone=no" />
+<meta name="author" content="John Doe" />
+
+
+
+<meta name="description" content="Qt中使用QListWidget, QTableWidget,QTreeWidget(只考虑最大3层)自定义子widget来展示数据的时候，通常子widget的个数达到了上千加载展示就会很慢，而且很耗内存。原因是new出来的widget太多了。下面的解决方案希望能帮助你。
+原理：
+
+其实一个列表展示给用户看的高度是很有限的不会超过一个屏幕的高度，而这个高度只需要很少的子widget就可以填充满，所">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Qt大数据列表展示">
+<meta property="og:url" content="http://yoursite.com/2016/10/18/Qt大数据列表展示/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="Qt中使用QListWidget, QTableWidget,QTreeWidget(只考虑最大3层)自定义子widget来展示数据的时候，通常子widget的个数达到了上千加载展示就会很慢，而且很耗内存。原因是new出来的widget太多了。下面的解决方案希望能帮助你。
+原理：
+
+其实一个列表展示给用户看的高度是很有限的不会超过一个屏幕的高度，而这个高度只需要很少的子widget就可以填充满，所">
+<meta property="og:image" content="http://img.blog.csdn.net/20160804225858636">
+<meta property="og:updated_time" content="2016-10-18T07:25:47.548Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Qt大数据列表展示">
+<meta name="twitter:description" content="Qt中使用QListWidget, QTableWidget,QTreeWidget(只考虑最大3层)自定义子widget来展示数据的时候，通常子widget的个数达到了上千加载展示就会很慢，而且很耗内存。原因是new出来的widget太多了。下面的解决方案希望能帮助你。
+原理：
+
+其实一个列表展示给用户看的高度是很有限的不会超过一个屏幕的高度，而这个高度只需要很少的子widget就可以填充满，所">
+<meta name="twitter:image" content="http://img.blog.csdn.net/20160804225858636">
+
+<link rel="apple-touch-icon" href= "/apple-touch-icon.png">
+
+
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+
+
+
+    <link rel="shortcut icon" href="/favicon.png">
+
+
+
+    <link href="//cdn.bootcss.com/animate.css/3.5.1/animate.min.css" rel="stylesheet">
+
+
+
+    <link href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet">
+
+
+
+    <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+    <link href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-minimal.css" rel="stylesheet">
+
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+<link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+
+
+<title>Qt大数据列表展示 | Hexo</title>
+
+<script src="//cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+<script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
+
+<script>
+    var yiliaConfig = {
+        fancybox: true,
+        animate: true,
+        isHome: false,
+        isPost: true,
+        isArchive: false,
+        isTag: false,
+        isCategory: false,
+        fancybox_js: "//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.js",
+        scrollreveal: "//cdn.bootcss.com/scrollReveal.js/3.1.4/scrollreveal.min.js",
+        search: undefined
+    }
+</script>
+
+
+    <script> yiliaConfig.jquery_ui = [false]; </script>
+
+
+
+    <script> yiliaConfig.rootUrl = "\/";</script>
+
+
+
+
+
+
+</head>
+<body>
+  <div id="container">
+    <div class="left-col">
+    <div class="overlay"></div>
+<div class="intrude-less">
+    <header id="header" class="inner">
+        <a href="/" class="profilepic">
+            <img src="/img/avatar.png" class="animated zoomIn">
+        </a>
+        <hgroup>
+          <h1 class="header-author"><a href="/">John Doe</a></h1>
+        </hgroup>
+
+        
+
+        
+
+
+        
+            <div id="switch-btn" class="switch-btn">
+                <div class="icon">
+                    <div class="icon-ctn">
+                        <div class="icon-wrap icon-house" data-idx="0">
+                            <div class="birdhouse"></div>
+                            <div class="birdhouse_holes"></div>
+                        </div>
+                        <div class="icon-wrap icon-ribbon hide" data-idx="1">
+                            <div class="ribbon"></div>
+                        </div>
+                        
+                        <div class="icon-wrap icon-link hide" data-idx="2">
+                            <div class="loopback_l"></div>
+                            <div class="loopback_r"></div>
+                        </div>
+                        
+                        
+                        <div class="icon-wrap icon-me hide" data-idx="3">
+                            <div class="user"></div>
+                            <div class="shoulder"></div>
+                        </div>
+                        
+                    </div>
+                    
+                </div>
+                <div class="tips-box hide">
+                    <div class="tips-arrow"></div>
+                    <ul class="tips-inner">
+                        <li>菜单</li>
+                        <li>标签</li>
+                        
+                        <li>友情链接</li>
+                        
+                        
+                        <li>关于我</li>
+                        
+                    </ul>
+                </div>
+            </div>
+        
+
+        <div id="switch-area" class="switch-area">
+            <div class="switch-wrap">
+                <section class="switch-part switch-part1">
+                    <nav class="header-menu">
+                        <ul>
+                        
+                            <li><a href="/">主页</a></li>
+                        
+                            <li><a href="/archives/">所有文章</a></li>
+                        
+                            <li><a href="/tags/">标签云</a></li>
+                        
+                            <li><a href="/about/">关于我</a></li>
+                        
+                        </ul>
+                    </nav>
+                    <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" href="mailto:123@123.com" title="Email"></a>
+                            
+                                <a class="fa GitHub" href="#" title="GitHub"></a>
+                            
+                                <a class="fa RSS" href="/atom.xml" title="RSS"></a>
+                            
+                        </ul>
+                    </nav>
+                </section>
+                
+                
+                <section class="switch-part switch-part2">
+                    <div class="widget tagcloud" id="js-tagcloud">
+                        
+                    </div>
+                </section>
+                
+                
+                
+                <section class="switch-part switch-part3">
+                    <div id="js-friends">
+                    
+                      <a class="main-nav-link switch-friends-link" href="https://hexo.io">Hexo</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="https://pages.github.com/">GitHub</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="http://moxfive.xyz/">MOxFIVE</a>
+                    
+                    </div>
+                </section>
+                
+
+                
+                
+                <section class="switch-part switch-part4">
+                
+                    <div id="js-aboutme">专注于前端</div>
+                </section>
+                
+            </div>
+        </div>
+    </header>                
+</div>
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+      <div class="overlay">
+          <div class="slider-trigger"></div>
+          <h1 class="header-author js-mobile-header hide"><a href="/" title="回到主页">John Doe</a></h1>
+      </div>
+    <div class="intrude-less">
+        <header id="header" class="inner">
+            <a href="/" class="profilepic">
+                <img src="/img/avatar.png" class="animated zoomIn">
+            </a>
+            <hgroup>
+              <h1 class="header-author"><a href="/" title="回到主页">John Doe</a></h1>
+            </hgroup>
+            
+            <nav class="header-menu">
+                <ul>
+                
+                    <li><a href="/">主页</a></li>
+                
+                    <li><a href="/archives/">所有文章</a></li>
+                
+                    <li><a href="/tags/">标签云</a></li>
+                
+                    <li><a href="/about/">关于我</a></li>
+                
+                <div class="clearfix"></div>
+                </ul>
+            </nav>
+            <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" target="_blank" href="mailto:123@123.com" title="Email"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="#" title="GitHub"></a>
+                            
+                                <a class="fa RSS" target="_blank" href="/atom.xml" title="RSS"></a>
+                            
+                        </ul>
+            </nav>
+        </header>                
+    </div>
+    <link class="menu-list" tags="标签" friends="友情链接" about="关于我"/>
+</nav>
+      <div class="body-wrap"><article id="post-Qt大数据列表展示" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2016/10/18/Qt大数据列表展示/" class="article-date">
+      <time datetime="2016-10-18T07:22:01.000Z" itemprop="datePublished">2016-10-18</time>
+</a>
+
+
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Qt大数据列表展示
+    </h1>
+  
+
+      </header>
+      
+      <div class="article-info article-info-post">
+        
+
+        
+        <div class="clearfix"></div>
+      </div>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+        <p>Qt中使用QListWidget, QTableWidget,QTreeWidget(只考虑最大3层)自定义子widget来展示数据的时候，通常子widget的个数达到了上千加载展示就会很慢，而且很耗内存。原因是new出来的widget太多了。下面的解决方案希望能帮助你。</p>
+<p><em>原理：</em></p>
+<blockquote>
+<p>其实一个列表展示给用户看的高度是很有限的不会超过一个屏幕的高度，而这个高度只需要很少的子widget就可以填充满，所以，当你有1万个数据要展示时，并不需要每个数据都new一个widget（自定义的）来展示，你只需要new显示出来的那几个widget，当滚动条滚动的时候将超出屏幕的widget隐藏起来，将要新展示的数据重用隐藏的widget来展示而不需要new新的widget，只有当widget个数不足以覆盖列表显示的区域时才new新的（最多也就覆盖一个屏幕需要的个数）</p>
+</blockquote>
+<h3 id="组件组成"><a href="#组件组成" class="headerlink" title="组件组成"></a>组件组成</h3><ul>
+<li>一个父widget，容纳子widget和滚动条</li>
+<li>子widget使用move方法填充满展示区域</li>
+<li>滚动条加载更多内容</li>
+</ul>
+<h3 id="基本方法"><a href="#基本方法" class="headerlink" title="基本方法"></a>基本方法</h3><ul>
+<li>在showEvent里面刷新要展示的数据到widget</li>
+<li>resizeEvent的时候会改变展示区域的大小需要重新刷新数据到widget使其新的区域能完全被widget展示出来</li>
+<li>wheelEvent需要改变滚动条当前值</li>
+<li>连接QScrollBar::valueChanged事件，当事件发生时要将新的数据展示到widget上</li>
+</ul>
+<h3 id="怎样重用子widget"><a href="#怎样重用子widget" class="headerlink" title="怎样重用子widget"></a>怎样重用子widget</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">QList&lt;ItemWidget*&gt; m_widgets;</div></pre></td></tr></table></figure>
+<blockquote>
+<p>m_widgets来缓存所有创建出来的子widget，当需要新widget的时候看缓存里是否有隐藏的，如果有就拿出来进行新数据的展示，如果没有就根据数据的类型来创建新的widget</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div></pre></td><td class="code"><pre><div class="line">ItemWidget *TreeWidget::getWidget(const ItemInfo &amp;info)</div><div class="line">&#123;</div><div class="line">    // 存在这种类型的widget，并且没有被使用（不可见）直接返回</div><div class="line">    ItemWidget *widget = nullptr;</div><div class="line">    for (int i=0; i&lt;m_widgets.size(); i++) &#123;</div><div class="line">        if (m_widgets[i]-&gt;data().type == info.type &amp;&amp; !m_widgets[i]-&gt;isVisible()) &#123;</div><div class="line">            widget = m_widgets[i];</div><div class="line">            break;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    if (widget == nullptr) &#123;</div><div class="line">        if (info.type == Top) &#123;</div><div class="line">            widget = new TopWidget(this);</div><div class="line">        &#125; else if (info.type == Parent) &#123;</div><div class="line">            widget = new ParentWidget(this);</div><div class="line">        &#125; else if (info.type == Child) &#123;</div><div class="line">            widget = new ChildWidget(this);</div><div class="line">        &#125; else &#123;</div><div class="line">            Q_ASSERT(0);</div><div class="line">        &#125;</div><div class="line">        connect(widget, &amp;ItemWidget::sigMousePress, [this, widget]() &#123;</div><div class="line">            if (widget-&gt;data().type != Child) &#123;</div><div class="line">                ItemInfo newInfo = widget-&gt;data();</div><div class="line">                newInfo.isExpand = !newInfo.isExpand;</div><div class="line">                updateItemInfo(newInfo);</div><div class="line">                refreshWidgets();</div><div class="line">            &#125; else &#123;</div><div class="line">                gotoSelected(widget-&gt;data().id);</div><div class="line">            &#125;</div><div class="line">            emit sigItemMousePress(widget-&gt;data());</div><div class="line">        &#125;);</div><div class="line">        connect(widget, &amp;ItemWidget::sigMouseDoubleClick, [this, widget]() &#123;</div><div class="line">            emit sigItemMouseDoubleClick(widget-&gt;data());</div><div class="line">        &#125;);</div><div class="line">        m_widgets.append(widget);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    widget-&gt;setData(info);</div><div class="line">    // 如果是当前选中的widget</div><div class="line">    if (widget-&gt;data().type == Child) &#123;</div><div class="line">        widget-&gt;setSelected(widget-&gt;data().id == m_curChildId);</div><div class="line">    &#125;</div><div class="line">    widget-&gt;resize(this-&gt;width(), widget-&gt;height());</div><div class="line">    widget-&gt;show();</div><div class="line">    return widget;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="重点是刷新数据到widget上"><a href="#重点是刷新数据到widget上" class="headerlink" title="重点是刷新数据到widget上"></a>重点是刷新数据到widget上</h3><blockquote>
+<p>首先，将所有可见widget隐藏起来，遍历所有数据，y轴从0开始每次增加遍历数据展示时需要的高度,当y值大于滚动条值并且小于组件高度时就需要将子widget展示出来<br>组件高度就是滚动条page step值<br>滚动条mininum为0，maxinum为y - pageStep<br>公式：document length = maxinum() - minimum() + pageStep()</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div></pre></td><td class="code"><pre><div class="line">void TreeWidget::refreshWidgets()</div><div class="line">&#123;</div><div class="line">    for (int i=0; i&lt;m_widgets.size(); i++) &#123;</div><div class="line">        m_widgets[i]-&gt;resize(this-&gt;width(), m_widgets[i]-&gt;height());</div><div class="line">        m_widgets[i]-&gt;hide();</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    auto moveItem = [this](const ItemInfo &amp;item, int &amp;y, int &amp;startPos, bool &amp;isContinue) &#123;</div><div class="line">        if (y &gt;= m_scrollbar-&gt;value() &amp;&amp; isContinue) &#123;</div><div class="line">            getWidget(item)-&gt;move(0, startPos);</div><div class="line">            startPos += item.height;</div><div class="line">            isContinue = startPos &lt; this-&gt;height();</div><div class="line">        &#125;</div><div class="line">        y += item.height;</div><div class="line">    &#125;;</div><div class="line"></div><div class="line">    int y = 0, startPos = 0;</div><div class="line">    bool isContinue = true;</div><div class="line">    for (int i=0; i&lt;m_list.count(); i++) &#123;</div><div class="line">        const ItemInfo &amp;topItem = m_list[i];</div><div class="line">        moveItem(topItem, y, startPos, isContinue);</div><div class="line">        if (topItem.childList.count() &gt; 0 &amp;&amp; topItem.isExpand) &#123;</div><div class="line">            for (int j=0; j&lt;topItem.childList.count(); j++) &#123;</div><div class="line">                const ItemInfo &amp;parentItem = topItem.childList[j];</div><div class="line">                moveItem(parentItem, y, startPos, isContinue);</div><div class="line">                if (parentItem.childList.count() &gt; 0 &amp;&amp; parentItem.isExpand) &#123;</div><div class="line">                    for (int k=0; k&lt;parentItem.childList.count(); k++) &#123;</div><div class="line">                        const ItemInfo &amp;childItem = parentItem.childList[k];</div><div class="line">                        moveItem(childItem, y, startPos, isContinue);</div><div class="line">                    &#125;</div><div class="line">                &#125;</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    qDebug() &lt;&lt; &quot;y:&quot; &lt;&lt; y &lt;&lt; &quot;, startPos:&quot; &lt;&lt; startPos &lt;&lt; &quot;, height:&quot; &lt;&lt; this-&gt;height();</div><div class="line">    m_scrollbar-&gt;move(this-&gt;width() - m_scrollbar-&gt;width(), 0);</div><div class="line">    m_scrollbar-&gt;resize(m_scrollbar-&gt;width(), this-&gt;height());</div><div class="line">    m_scrollbar-&gt;setPageStep(this-&gt;height());</div><div class="line">    if (y &gt; startPos) &#123;</div><div class="line">        m_scrollbar-&gt;setMaximum(y - m_scrollbar-&gt;pageStep());</div><div class="line">        m_scrollbar-&gt;show();</div><div class="line">        m_scrollbar-&gt;raise();</div><div class="line">    &#125; else &#123;</div><div class="line">        m_scrollbar-&gt;setMaximum(0);</div><div class="line">        m_scrollbar-&gt;setValue(0);</div><div class="line">        m_scrollbar-&gt;hide();</div><div class="line">    &#125;</div><div class="line">    qDebug() &lt;&lt; &quot;min:&quot; &lt;&lt; m_scrollbar-&gt;minimum() &lt;&lt; &quot;, max:&quot; &lt;&lt; m_scrollbar-&gt;maximum() &lt;&lt; &quot;, value:&quot; &lt;&lt; m_scrollbar-&gt;value();</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="结尾"><a href="#结尾" class="headerlink" title="结尾"></a>结尾</h3><ul>
+<li>性能优化</li>
+<li>响应事件扩充</li>
+</ul>
+<p><a href="https://code.csdn.net/tujiaw/threelistwidget/tree/master" target="_blank" rel="external">源码</a></p>
+<ul>
+<li>代码中展示的元素有17000多个效率还是很高的</li>
+<li>代码中有三层也有两层，当然一层的话相信更简单</li>
+<li>红色item是最顶层</li>
+<li>绿色item是中间层</li>
+<li>白色item是最底层<br><img src="http://img.blog.csdn.net/20160804225858636" alt="这里写图片描述"></li>
+</ul>
+
+      
+    </div>
+    
+  </div>
+  
+    
+    <div class="copyright">
+        <p><span>本文标题:</span><a href="/2016/10/18/Qt大数据列表展示/">Qt大数据列表展示</a></p>
+        <p><span>文章作者:</span><a href="/" title="回到主页">John Doe</a></p>
+        <p><span>发布时间:</span>2016-10-18, 15:22:01</p>
+        <p><span>最后更新:</span>2016-10-18, 15:25:47</p>
+        <p>
+            <span>原始链接:</span><a class="post-url" href="/2016/10/18/Qt大数据列表展示/" title="Qt大数据列表展示">http://yoursite.com/2016/10/18/Qt大数据列表展示/</a>
+            <span class="copy-path" data-clipboard-text="原文: http://yoursite.com/2016/10/18/Qt大数据列表展示/　　作者: John Doe" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
+            <script> var clipboard = new Clipboard('.copy-path'); </script>
+        </p>
+        <p>
+            <span>许可协议:</span><i class="fa fa-creative-commons"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" title="CC BY-NC-SA 4.0 International" target = "_blank">"署名-非商用-相同方式共享 4.0"</a> 转载请保留原文链接及作者。
+        </p>
+    </div>
+
+
+
+    <nav id="article-nav">
+        
+        
+            <div id="article-nav-older" class="article-nav-title">
+                <a href="/2016/10/18/nodejs爬虫GBK网页乱码/">
+                    nodejs爬虫GBK网页乱码
+                </a>
+            </div>
+        
+    </nav>
+
+  
+</article>
+
+    <div id="toc" class="toc-article">
+        <strong class="toc-title">文章目录</strong>
+        
+            <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#组件组成"><span class="toc-number">1.</span> <span class="toc-text">组件组成</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#基本方法"><span class="toc-number">2.</span> <span class="toc-text">基本方法</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#怎样重用子widget"><span class="toc-number">3.</span> <span class="toc-text">怎样重用子widget</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#重点是刷新数据到widget上"><span class="toc-number">4.</span> <span class="toc-text">重点是刷新数据到widget上</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#结尾"><span class="toc-number">5.</span> <span class="toc-text">结尾</span></a></li></ol>
+        
+    </div>
+    <style>
+        .left-col .switch-btn,
+        .left-col .switch-area {
+            display: none;
+        }
+        .toc-level-3 i,
+        .toc-level-3 ol {
+            display: none !important;
+        }
+    </style>
+
+    <input type="button" id="tocButton" value="隐藏目录"  title="点击按钮隐藏或者显示文章目录">
+
+    <script>
+        yiliaConfig.toc = ["隐藏目录", "显示目录", !!"false"];
+    </script>
+
+
+
+    
+<div class="share">
+    
+        <div class="bdsharebuttonbox">
+            <a href="#" class="fa fa-twitter bds_twi" data-cmd="twi" title="分享到推特"></a>
+            <a href="#" class="fa fa-weibo bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a>
+            <a href="#" class="fa fa-qq bds_sqq" data-cmd="sqq" title="分享给 QQ 好友"></a>
+            <a href="#" class="fa fa-files-o bds_copy" data-cmd="copy" title="复制网址"></a>
+            <a href="#" class="fa fa fa-envelope-o bds_mail" data-cmd="mail" title="通过邮件分享"></a>
+            <a href="#" class="fa fa-weixin bds_weixin" data-cmd="weixin" title="生成文章二维码"></a>
+            <a href="#" class="fa fa-share-alt bds_more" data-cmd="more"></i></a>
+        </div>
+        <script>
+            window._bd_share_config={
+                "common":{"bdSnsKey":{},"bdText":"Qt大数据列表展示　| Hexo　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+        </script>
+    
+
+    
+</div>
+
+
+
+
+
+
+
+    
+
+
+
+
+    <div class="scroll" id="post-nav-button">
+        
+            <a href="/" title="回到主页"><i class="fa fa-home"></i></a>
+        
+
+        <a title="文章列表"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
+
+        
+            <a href="/2016/10/18/nodejs爬虫GBK网页乱码/" title="下一篇: nodejs爬虫GBK网页乱码">
+                <i class="fa fa-angle-right"></i>
+            </a>
+        
+    </div>
+
+    <ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2016/10/18/Qt大数据列表展示/">Qt大数据列表展示</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/10/18/nodejs爬虫GBK网页乱码/">nodejs爬虫GBK网页乱码</a></li></ul>
+
+
+
+
+    <script>
+        
+    </script>
+</div>
+      <footer id="footer">
+    <div class="outer">
+        <div id="footer-info">
+            <div class="footer-left">
+                <i class="fa fa-copyright"></i> 
+                2016 John Doe
+            </div>
+            <div class="footer-right">
+                <a href="http://hexo.io/" target="_blank" title="快速、简洁且高效的博客框架">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="简而不减 Hexo 双栏博客主题  v3.5">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>
+            </div>
+        </div>
+        
+            <div class="visit">
+                
+                    <span id="busuanzi_container_site_pv" style='display:none'>
+                        <span id="site-visit" title="本站到访数"><i class="fa fa-user" aria-hidden="true"></i><span id="busuanzi_value_site_uv"></span>
+                        </span>
+                    </span>
+                
+                
+                    <span>| </span>
+                
+                
+                    <span id="busuanzi_container_page_pv" style='display:none'>
+                        <span id="page-visit"  title="本页阅读量"><i class="fa fa-eye animated infinite pulse" aria-hidden="true"></i><span id="busuanzi_value_page_pv"></span>
+                        </span>
+                    </span>
+                
+            </div>
+        
+    </div>
+</footer>
+    </div>
+    
+<script data-main="/js/main.js" src="//cdn.bootcss.com/require.js/2.2.0/require.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            var iPad = window.navigator.userAgent.indexOf('iPad');
+            if (iPad > -1 || $(".left-col").css("display") === "none") {
+                var bgColorList = ["#9db3f4", "#414141", "#e5a859", "#f5dfc6", "#c084a0", "#847e72", "#cd8390", "#996731"];
+                var bgColor = Math.ceil(Math.random() * (bgColorList.length - 1));
+                $("body").css({"background-color": bgColorList[bgColor], "background-size": "cover"});
+            }
+            else {
+                var backgroundnum = 5;
+                var backgroundimg = "url(/background/bg-x.jpg)".replace(/x/gi, Math.ceil(Math.random() * backgroundnum));
+                $("body").css({"background": backgroundimg, "background-attachment": "fixed", "background-size": "cover"});
+            }
+        })
+    </script>
+
+
+
+
+
+<div class="scroll" id="scroll">
+    <a href="#" title="返回顶部"><i class="fa fa-arrow-up"></i></a>
+    <a href="#comments" onclick="load$hide();" title="查看评论"><i class="fa fa-comments-o"></i></a>
+    <a href="#footer" title="转到底部"><i class="fa fa-arrow-down"></i></a>
+</div>
+<script>
+    // Open in New Window
+    
+        var oOpenInNew = {
+            
+            
+            
+            
+            
+            
+             archives: ".archive-article-title", 
+             miniArchives: "a.post-list-link", 
+            
+             friends: "#js-friends a", 
+             socail: ".social a" 
+        }
+        for (var x in oOpenInNew) {
+            $(oOpenInNew[x]).attr("target", "_blank");
+        }
+    
+</script>
+
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+  </div>
+</body>
+</html>
