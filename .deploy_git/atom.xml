@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Hexo</title>
+  
+  <link href="/atom.xml" rel="self"/>
+  
+  <link href="http://yoursite.com/"/>
+  <updated>2016-10-18T07:25:47.548Z</updated>
+  <id>http://yoursite.com/</id>
+  
+  <author>
+    <name>John Doe</name>
+    
+  </author>
+  
+  <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Qt大数据列表展示</title>
+    <link href="http://yoursite.com/2016/10/18/Qt%E5%A4%A7%E6%95%B0%E6%8D%AE%E5%88%97%E8%A1%A8%E5%B1%95%E7%A4%BA/"/>
+    <id>http://yoursite.com/2016/10/18/Qt大数据列表展示/</id>
+    <published>2016-10-18T07:22:01.000Z</published>
+    <updated>2016-10-18T07:25:47.548Z</updated>
+    
+    <content type="html"><![CDATA[<p>Qt中使用QListWidget, QTableWidget,QTreeWidget(只考虑最大3层)自定义子widget来展示数据的时候，通常子widget的个数达到了上千加载展示就会很慢，而且很耗内存。原因是new出来的widget太多了。下面的解决方案希望能帮助你。</p>
+<p><em>原理：</em></p>
+<blockquote>
+<p>其实一个列表展示给用户看的高度是很有限的不会超过一个屏幕的高度，而这个高度只需要很少的子widget就可以填充满，所以，当你有1万个数据要展示时，并不需要每个数据都new一个widget（自定义的）来展示，你只需要new显示出来的那几个widget，当滚动条滚动的时候将超出屏幕的widget隐藏起来，将要新展示的数据重用隐藏的widget来展示而不需要new新的widget，只有当widget个数不足以覆盖列表显示的区域时才new新的（最多也就覆盖一个屏幕需要的个数）</p>
+</blockquote>
+<h3 id="组件组成"><a href="#组件组成" class="headerlink" title="组件组成"></a>组件组成</h3><ul>
+<li>一个父widget，容纳子widget和滚动条</li>
+<li>子widget使用move方法填充满展示区域</li>
+<li>滚动条加载更多内容</li>
+</ul>
+<h3 id="基本方法"><a href="#基本方法" class="headerlink" title="基本方法"></a>基本方法</h3><ul>
+<li>在showEvent里面刷新要展示的数据到widget</li>
+<li>resizeEvent的时候会改变展示区域的大小需要重新刷新数据到widget使其新的区域能完全被widget展示出来</li>
+<li>wheelEvent需要改变滚动条当前值</li>
+<li>连接QScrollBar::valueChanged事件，当事件发生时要将新的数据展示到widget上</li>
+</ul>
+<h3 id="怎样重用子widget"><a href="#怎样重用子widget" class="headerlink" title="怎样重用子widget"></a>怎样重用子widget</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">QList&lt;ItemWidget*&gt; m_widgets;</div></pre></td></tr></table></figure>
+<blockquote>
+<p>m_widgets来缓存所有创建出来的子widget，当需要新widget的时候看缓存里是否有隐藏的，如果有就拿出来进行新数据的展示，如果没有就根据数据的类型来创建新的widget</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div></pre></td><td class="code"><pre><div class="line">ItemWidget *TreeWidget::getWidget(const ItemInfo &amp;info)</div><div class="line">&#123;</div><div class="line">    // 存在这种类型的widget，并且没有被使用（不可见）直接返回</div><div class="line">    ItemWidget *widget = nullptr;</div><div class="line">    for (int i=0; i&lt;m_widgets.size(); i++) &#123;</div><div class="line">        if (m_widgets[i]-&gt;data().type == info.type &amp;&amp; !m_widgets[i]-&gt;isVisible()) &#123;</div><div class="line">            widget = m_widgets[i];</div><div class="line">            break;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    if (widget == nullptr) &#123;</div><div class="line">        if (info.type == Top) &#123;</div><div class="line">            widget = new TopWidget(this);</div><div class="line">        &#125; else if (info.type == Parent) &#123;</div><div class="line">            widget = new ParentWidget(this);</div><div class="line">        &#125; else if (info.type == Child) &#123;</div><div class="line">            widget = new ChildWidget(this);</div><div class="line">        &#125; else &#123;</div><div class="line">            Q_ASSERT(0);</div><div class="line">        &#125;</div><div class="line">        connect(widget, &amp;ItemWidget::sigMousePress, [this, widget]() &#123;</div><div class="line">            if (widget-&gt;data().type != Child) &#123;</div><div class="line">                ItemInfo newInfo = widget-&gt;data();</div><div class="line">                newInfo.isExpand = !newInfo.isExpand;</div><div class="line">                updateItemInfo(newInfo);</div><div class="line">                refreshWidgets();</div><div class="line">            &#125; else &#123;</div><div class="line">                gotoSelected(widget-&gt;data().id);</div><div class="line">            &#125;</div><div class="line">            emit sigItemMousePress(widget-&gt;data());</div><div class="line">        &#125;);</div><div class="line">        connect(widget, &amp;ItemWidget::sigMouseDoubleClick, [this, widget]() &#123;</div><div class="line">            emit sigItemMouseDoubleClick(widget-&gt;data());</div><div class="line">        &#125;);</div><div class="line">        m_widgets.append(widget);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    widget-&gt;setData(info);</div><div class="line">    // 如果是当前选中的widget</div><div class="line">    if (widget-&gt;data().type == Child) &#123;</div><div class="line">        widget-&gt;setSelected(widget-&gt;data().id == m_curChildId);</div><div class="line">    &#125;</div><div class="line">    widget-&gt;resize(this-&gt;width(), widget-&gt;height());</div><div class="line">    widget-&gt;show();</div><div class="line">    return widget;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="重点是刷新数据到widget上"><a href="#重点是刷新数据到widget上" class="headerlink" title="重点是刷新数据到widget上"></a>重点是刷新数据到widget上</h3><blockquote>
+<p>首先，将所有可见widget隐藏起来，遍历所有数据，y轴从0开始每次增加遍历数据展示时需要的高度,当y值大于滚动条值并且小于组件高度时就需要将子widget展示出来<br>组件高度就是滚动条page step值<br>滚动条mininum为0，maxinum为y - pageStep<br>公式：document length = maxinum() - minimum() + pageStep()</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div></pre></td><td class="code"><pre><div class="line">void TreeWidget::refreshWidgets()</div><div class="line">&#123;</div><div class="line">    for (int i=0; i&lt;m_widgets.size(); i++) &#123;</div><div class="line">        m_widgets[i]-&gt;resize(this-&gt;width(), m_widgets[i]-&gt;height());</div><div class="line">        m_widgets[i]-&gt;hide();</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    auto moveItem = [this](const ItemInfo &amp;item, int &amp;y, int &amp;startPos, bool &amp;isContinue) &#123;</div><div class="line">        if (y &gt;= m_scrollbar-&gt;value() &amp;&amp; isContinue) &#123;</div><div class="line">            getWidget(item)-&gt;move(0, startPos);</div><div class="line">            startPos += item.height;</div><div class="line">            isContinue = startPos &lt; this-&gt;height();</div><div class="line">        &#125;</div><div class="line">        y += item.height;</div><div class="line">    &#125;;</div><div class="line"></div><div class="line">    int y = 0, startPos = 0;</div><div class="line">    bool isContinue = true;</div><div class="line">    for (int i=0; i&lt;m_list.count(); i++) &#123;</div><div class="line">        const ItemInfo &amp;topItem = m_list[i];</div><div class="line">        moveItem(topItem, y, startPos, isContinue);</div><div class="line">        if (topItem.childList.count() &gt; 0 &amp;&amp; topItem.isExpand) &#123;</div><div class="line">            for (int j=0; j&lt;topItem.childList.count(); j++) &#123;</div><div class="line">                const ItemInfo &amp;parentItem = topItem.childList[j];</div><div class="line">                moveItem(parentItem, y, startPos, isContinue);</div><div class="line">                if (parentItem.childList.count() &gt; 0 &amp;&amp; parentItem.isExpand) &#123;</div><div class="line">                    for (int k=0; k&lt;parentItem.childList.count(); k++) &#123;</div><div class="line">                        const ItemInfo &amp;childItem = parentItem.childList[k];</div><div class="line">                        moveItem(childItem, y, startPos, isContinue);</div><div class="line">                    &#125;</div><div class="line">                &#125;</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    qDebug() &lt;&lt; &quot;y:&quot; &lt;&lt; y &lt;&lt; &quot;, startPos:&quot; &lt;&lt; startPos &lt;&lt; &quot;, height:&quot; &lt;&lt; this-&gt;height();</div><div class="line">    m_scrollbar-&gt;move(this-&gt;width() - m_scrollbar-&gt;width(), 0);</div><div class="line">    m_scrollbar-&gt;resize(m_scrollbar-&gt;width(), this-&gt;height());</div><div class="line">    m_scrollbar-&gt;setPageStep(this-&gt;height());</div><div class="line">    if (y &gt; startPos) &#123;</div><div class="line">        m_scrollbar-&gt;setMaximum(y - m_scrollbar-&gt;pageStep());</div><div class="line">        m_scrollbar-&gt;show();</div><div class="line">        m_scrollbar-&gt;raise();</div><div class="line">    &#125; else &#123;</div><div class="line">        m_scrollbar-&gt;setMaximum(0);</div><div class="line">        m_scrollbar-&gt;setValue(0);</div><div class="line">        m_scrollbar-&gt;hide();</div><div class="line">    &#125;</div><div class="line">    qDebug() &lt;&lt; &quot;min:&quot; &lt;&lt; m_scrollbar-&gt;minimum() &lt;&lt; &quot;, max:&quot; &lt;&lt; m_scrollbar-&gt;maximum() &lt;&lt; &quot;, value:&quot; &lt;&lt; m_scrollbar-&gt;value();</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="结尾"><a href="#结尾" class="headerlink" title="结尾"></a>结尾</h3><ul>
+<li>性能优化</li>
+<li>响应事件扩充</li>
+</ul>
+<p><a href="https://code.csdn.net/tujiaw/threelistwidget/tree/master" target="_blank" rel="external">源码</a></p>
+<ul>
+<li>代码中展示的元素有17000多个效率还是很高的</li>
+<li>代码中有三层也有两层，当然一层的话相信更简单</li>
+<li>红色item是最顶层</li>
+<li>绿色item是中间层</li>
+<li>白色item是最底层<br><img src="http://img.blog.csdn.net/20160804225858636" alt="这里写图片描述"></li>
+</ul>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;Qt中使用QListWidget, QTableWidget,QTreeWidget(只考虑最大3层)自定义子widget来展示数据的时候，通常子widget的个数达到了上千加载展示就会很慢，而且很耗内存。原因是new出来的widget太多了。下面的解决方案希望能帮助你。&lt;
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
+    <title>nodejs爬虫GBK网页乱码</title>
+    <link href="http://yoursite.com/2016/10/18/nodejs%E7%88%AC%E8%99%ABGBK%E7%BD%91%E9%A1%B5%E4%B9%B1%E7%A0%81/"/>
+    <id>http://yoursite.com/2016/10/18/nodejs爬虫GBK网页乱码/</id>
+    <published>2016-10-18T07:14:37.000Z</published>
+    <updated>2016-10-18T07:14:37.603Z</updated>
+    
+    <summary type="html">
+    
+    </summary>
+    
+    
+  </entry>
+  
+</feed>
